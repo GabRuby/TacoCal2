@@ -233,7 +233,7 @@ const SplitBillModal = ({ order, total, onClose /*, onTotalPaidAmountChange */ }
                             const subtotal = menuItem.price * item.quantity;
                             return (
                                 <div key={item.id} className="flex text-gray-700 text-sm items-start gap-x-1" style={{ minHeight: '1.5em' }}>
-                                    <span>{getShortenedName(menuItem.name)} x {item.quantity}</span>
+                                    <span>{getShortenedName(menuItem.name)} x {item.quantity.toFixed(2)}</span>
                                     <span className="ml-auto">| {formatCurrency(subtotal, selectedCurrency)}</span>
                                 </div>
                             );
