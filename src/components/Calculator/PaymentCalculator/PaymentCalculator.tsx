@@ -43,6 +43,24 @@ export function PaymentCalculator({ total, tableId, showIcons = false, localPaym
   // Calcular restante en el modo mixto
   const remainingMixto = total - totalPaidMixto;
 
+  // Lógica para detectar tamaño de pantalla para mostrar solo iconos
+  const [isSmallScreen, setIsSmallScreen] = useState(window.innerWidth < 768); // Asumiendo 'sm' breakpoint de Tailwind es 768px
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsSmallScreen(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Determinar si solo se deben mostrar los iconos.
+  // Si showIcons es explícitamente true, siempre muestra iconos.
+  // Si showIcons es explícitamente false, nunca muestra iconos.
+  // Si showIcons no se proporciona (es undefined), usa la lógica responsiva (isSmallScreen).
+  const shouldShowOnlyIcons = showIcons !== undefined ? showIcons : isSmallScreen;
+
   const handlePaymentMethodChange = (method: Table['payment']['method']) => {
     if (onLocalPaymentChange) {
       onLocalPaymentChange({ ...payment, method });
@@ -60,7 +78,7 @@ export function PaymentCalculator({ total, tableId, showIcons = false, localPaym
   };
 
   // Determinar el tamaño del icono y el padding basado en showIcons y isSubaccount
-  const iconSize = isSubaccount ? 20 : (showIcons ? 24 : 20);
+  const iconSize = isSubaccount ? 20 : (shouldShowOnlyIcons ? 24 : 20);
   const buttonPadding = isSubaccount ? 'px-3 py-0.5' : 'px-4 py-2';
 
   return (
@@ -74,7 +92,7 @@ export function PaymentCalculator({ total, tableId, showIcons = false, localPaym
               : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
           }`}
         >
-          {showIcons ? (
+          {shouldShowOnlyIcons ? (
             <Banknote size={iconSize} />
           ) : (
             <>
@@ -91,7 +109,7 @@ export function PaymentCalculator({ total, tableId, showIcons = false, localPaym
               : 'bg-white border-gray-300 text-blue-700 hover:bg-blue-50'
           }`}
         >
-          {showIcons ? (
+          {shouldShowOnlyIcons ? (
             <CreditCard size={iconSize} />
           ) : (
             <>
@@ -107,8 +125,14 @@ export function PaymentCalculator({ total, tableId, showIcons = false, localPaym
             onClick={() => setIsMixtoModalOpen(true)}
             className={`flex-1 flex items-center justify-center gap-2 ${buttonPadding} rounded-md border bg-purple-100 border-purple-500 text-purple-700 hover:bg-purple-50`}
           >
-             <Banknote size={iconSize} /> {/* Usamos un icono similar por ahora */}
-             <span>Mixto</span>
+             {shouldShowOnlyIcons ? (
+                <Banknote size={iconSize} />
+             ) : (
+                <>
+                    <Banknote size={iconSize} /> {/* Usamos un icono similar por ahora */}
+                    <span>Mixto</span>
+                </>
+             )}
           </button>
         )}
       </div>
