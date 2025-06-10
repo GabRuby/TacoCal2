@@ -5,10 +5,13 @@ import { menuItems } from '../../data/menuItems';
 import { formatCurrency } from '../../utils/currencyFormatter';
 import { PaymentCalculator } from '../Calculator/PaymentCalculator/PaymentCalculator'; // Asumiendo que PaymentCalculator es un componente hermano o en esta ruta
 
-type TabKey = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | 'Res';
+// Definición de tipos más flexible para TabKey
+type TabKey = string;
 
 interface AssignedQuantitiesByTab {
-    [key: string]: { [key: number]: number };
+    [key: string]: { // Esto es TabKey
+        [itemId: string]: number; // itemId ahora es string
+    };
 }
 
 interface SplitBillContainerProps {
@@ -24,7 +27,7 @@ const SplitBillContainer = ({ order, total, tableId, onClose }: SplitBillContain
     const [selectedTab, setSelectedTab] = useState<TabKey>('A');
     const [assignedQuantitiesByTab, setAssignedQuantitiesByTab] = useState<AssignedQuantitiesByTab>({});
     const [paidSubaccounts, setPaidSubaccounts] = useState<{ [key: string]: boolean }>({});
-    const [localSubaccountPayment, setLocalSubaccountPayment] = useState<{ amount: number; method: 'cash' | 'transfer' }>({ amount: 0, method: 'cash' });
+    const [localSubaccountPayment, setLocalSubaccountPayment] = useState<{ amount: number; method: 'cash' | 'transfer' | 'card' | 'mixed' | 'NoEsp' }>({ amount: 0, method: 'cash' });
 
     useEffect(() => {
         setAssignedQuantitiesByTab(prev => {
@@ -61,7 +64,7 @@ const SplitBillContainer = ({ order, total, tableId, onClose }: SplitBillContain
         setLocalSubaccountPayment({ amount: 0, method: 'cash' });
     }, [selectedTab, paidSubaccounts]);
 
-    const totalAssignedOverall = (itemId: number): number => {
+    const totalAssignedOverall = (itemId: string): number => {
         let sum = 0;
         for (const tab of tabs) {
             if (tab === 'Res' && paidSubaccounts['Res']) {
@@ -79,13 +82,13 @@ const SplitBillContainer = ({ order, total, tableId, onClose }: SplitBillContain
     // Calcular si todos los items del pedido están completamente asignados
     const allItemsAssigned = order.every(item => totalAssignedOverall(item.id) === item.quantity);
 
-    const totalAssignedExcludingResto = (itemId: number): number =>
+    const totalAssignedExcludingResto = (itemId: string): number =>
         Object.entries(assignedQuantitiesByTab).reduce((sum, [tab, items]) => {
             if (tab === 'Res') return sum;
             return sum + (items[itemId] || 0);
         }, 0);
 
-    const restoQuantity = (itemId: number): number => {
+    const restoQuantity = (itemId: string): number => {
         if (paidSubaccounts['Res']) {
             return assignedQuantitiesByTab['Res']?.[itemId] || 0;
         }
@@ -98,7 +101,7 @@ const SplitBillContainer = ({ order, total, tableId, onClose }: SplitBillContain
         return name.split(' ').map(word => word.substring(0, 3)).join(' ');
     };
 
-    const getNextLetterTab = (existingTabs: TabKey[]): TabKey => {
+    const getNextLetterTab = (existingTabs: string[]): string => {
         const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
         for (const char of letters) {
             if (!existingTabs.includes(char)) return char;
@@ -122,10 +125,10 @@ const SplitBillContainer = ({ order, total, tableId, onClose }: SplitBillContain
             return newState;
         });
 
-        setSelectedTab(newLabel);
+        setSelectedTab(newLabel as TabKey); // Cast a TabKey después de asegurar que es válido
     };
 
-    const handleQuantityChange = (itemId: number, value: number) => {
+    const handleQuantityChange = (itemId: string, value: number) => {
         if (selectedTab === 'Res' || paidSubaccounts[selectedTab]) return;
 
         setAssignedQuantitiesByTab(prev => {
@@ -169,7 +172,7 @@ const SplitBillContainer = ({ order, total, tableId, onClose }: SplitBillContain
         }
 
         // Contar cuántas subcuentas están actualmente pagadas
-        const currentPaidTabsCount = Object.values(paidSubaccounts).filter(status => status).length;
+        const currentPaidTabsCount = Object.values(paidSubaccounts).filter(isPaid => isPaid).length;
 
         // Validación especial para la 4ta subcuenta pagada
         if (currentPaidTabsCount === 3 && !paidSubaccounts[selectedTab]) {
@@ -184,7 +187,7 @@ const SplitBillContainer = ({ order, total, tableId, onClose }: SplitBillContain
             // Verificar si el total de la orden se ha cubierto
             const totalPaidBeforeThisTab = Object.entries(paidSubaccounts)
                 .filter(([_, isPaid]) => isPaid)
-                .reduce((sum, [tab]) => sum + calculateSubTotalForTab(tab as TabKey), 0);
+                .reduce((sum, [tab]) => sum + calculateSubTotalForTab(tab), 0);
             const projectedTotalPaid = totalPaidBeforeThisTab + subtotal;
 
             if (Math.abs(projectedTotalPaid - total) > tolerance) {
@@ -227,166 +230,164 @@ const SplitBillContainer = ({ order, total, tableId, onClose }: SplitBillContain
                 </div>
                 
                 <div className="w-full h-[60vh] bg-white border border-gray-200 rounded flex flex-col">
-                    <div className="w-full h-[90%] flex flex-col">
-                        <div className="h-[90%] flex">
-                            {/* I1: Resumen */}
-                            <div className="w-[42.36%] bg-rose-50 p-2 flex flex-col overflow-y-auto">
-                                <h4 className="text-base font-semibold text-gray-700 mb-5">Resumen</h4>
-                                <div className="flex-1 overflow-y-auto space-y-3">
-                                    {order.map(item => {
-                                        const menuItem = menuItems.find(m => m.id === item.id)!;
-                                        const subtotal = menuItem.price * item.quantity;
-                                        return (
-                                            <div key={item.id} className="flex text-gray-700 text-sm items-start gap-x-1" style={{ minHeight: '1.5em' }}>
-                                                <span>{getShortenedName(menuItem.name)} x {item.quantity}</span>
-                                                <span className="ml-auto">| {formatCurrency(subtotal, selectedCurrency)}</span>
-                                            </div>
-                                        );
-                                    })}
-                                    <div className="border-t border-gray-200 pt-2 mt-2">
-                                        <div className="flex justify-between font-bold text-base">
-                                            <span>Tot</span>
-                                            <span>{formatCurrency(total, selectedCurrency)}</span>
+                    <div className="w-full h-[90%] flex overflow-y-auto">
+                        {/* I1: Resumen */}
+                        <div className="w-[42.36%] bg-rose-50 p-2 flex flex-col">
+                            <h4 className="text-base font-semibold text-gray-700 mb-5">Resumen</h4>
+                            <div className="flex-1 space-y-[0.55rem]">
+                                {order.map(item => {
+                                    const menuItem = menuItems.find(m => m.id === item.id)!;
+                                    const subtotal = menuItem.price * item.quantity;
+                                    return (
+                                        <div key={item.id} className="flex text-gray-700 text-sm items-start gap-x-1 whitespace-nowrap overflow-hidden text-ellipsis">
+                                            <span>{getShortenedName(menuItem.name)} x {item.quantity.toFixed(2)}</span>
+                                            <span className="ml-auto">| {formatCurrency(subtotal, selectedCurrency)}</span>
                                         </div>
+                                    );
+                                })}
+                                <div className="border-t border-gray-200 pt-2 mt-2">
+                                    <div className="flex justify-between font-bold text-base">
+                                        <span>Tot</span>
+                                        <span>{formatCurrency(total, selectedCurrency)}</span>
                                     </div>
-                                </div>
-                            </div>
-
-                            {/* I2: Tot */}
-                            <div className="w-[9.28%] bg-amber-50 p-2 flex flex-col items-center overflow-y-auto">
-                                <h4 className="text-base font-semibold text-gray-700 mb-5">Tot</h4>
-                                <div className="flex-1 w-full flex flex-col items-center space-y-3">
-                                    {order.map(item => {
-                                        const assignedTotal = totalAssignedOverall(item.id);
-                                        const quantityColor = assignedTotal === item.quantity ? 'text-green-500' : 'text-red-500';
-                                        return (
-                                            <div key={item.id} className="text-gray-700 text-sm flex items-center justify-center" style={{ minHeight: '1.5em' }}>
-                                                <span><span className={quantityColor}>{assignedTotal}</span></span>
-                                            </div>
-                                        );
-                                    })}
-                                    <div className="border-t border-gray-200 pt-2 mt-2 text-center">
-                                        <div className="font-bold text-base">
-                                            <span>
-                                                {order.reduce((sum, item) => sum + totalAssignedOverall(item.id), 0)}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* I3: Subcuentas */}
-                            <div className="w-[48.36%] bg-emerald-50 p-2 flex flex-col">
-
-                                <div className="flex-1 overflow-y-auto">
-                                    <div className="flex mb-2 items-center justify-around">
-                                        {tabs.map(tab => (
-                                            <button
-                                                key={tab}
-                                                onClick={() => setSelectedTab(tab)}
-                                                className={`px-3 py-0.5 rounded font-bold ${selectedTab === tab ? 'bg-orange-500 text-white' : 'bg-orange-100 text-orange-900 hover:bg-orange-200'}`}
-                                            >
-                                                {tab}
-                                            </button>
-                                        ))}
-                                        {tabs.filter(t => t !== 'Res').length < 3 && (
-                                            <button
-                                                onClick={handleAddTab}
-                                                className="px-3 py-0.5 rounded bg-green-400 text-white hover:bg-green-500"
-                                            >
-                                                +
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    <div className="space-y-2 mt-4 px-0">
-                                        {order.map(item => {
-                                            const menuItem = menuItems.find(m => m.id === item.id)!;
-                                            const quantity = selectedTab === 'Res'
-                                                ? restoQuantity(item.id)
-                                                : assignedQuantitiesByTab[selectedTab]?.[item.id] || 0;
-                                            const subtotal = quantity * menuItem.price;
-
-                                            return (
-                                                <div key={item.id} className="flex items-center text-sm py-0.25" style={{ minHeight: '0.5em' }}>
-                                                    {paidSubaccounts[selectedTab] ? (
-                                                        <span className="w-1/2 text-center py-0.5">{quantity}</span>
-                                                    ) : selectedTab === 'Res' ? (
-                                                        <span className="w-1/2 text-center py-0.5">{quantity}</span>
-                                                    ) : (
-                                                        <input
-                                                            type="number"
-                                                            className="w-1/2 border border-gray-00 px-1 py-0.5 rounded text-sm"
-                                                            value={quantity}
-                                                            min={0}
-                                                            max={item.quantity}
-                                                            onChange={(e) =>
-                                                                handleQuantityChange(item.id, parseInt(e.target.value) || 0)
-                                                            }
-                                                        />
-                                                    )}
-                                                    <span className="w-1/2 text-right">{formatCurrency(subtotal, selectedCurrency)}</span>
-                                                </div>
-                                            );
-                                        })}
-                                        <div className="border-t border-gray-300 pt-2 mt-4 flex justify-between font-bold text-base">
-                                            <span>{calculateAssignedItemsForTab(selectedTab)}</span>
-                                            <span>{formatCurrency(calculateSubTotalForTab(selectedTab), selectedCurrency)}</span>
-                                        </div>
-                                    </div>
-
-                                    <PaymentCalculator 
-                                        total={calculateSubTotalForTab(selectedTab)} 
-                                        tableId={tableId}
-                                        showIcons={true}
-                                        localPayment={localSubaccountPayment}
-                                        onLocalPaymentChange={setLocalSubaccountPayment}
-                                        isSubaccount={true}
-                                    />
                                 </div>
                             </div>
                         </div>
-                        
-                        <div className="h-[10%] flex">
-                            {/* Combined Notes Area */}
-                            <div className="w-[51.64%] bg-white p-2 flex items-center justify-center text-sm text-gray-700 text-center">
-                                {hasPaidSubaccounts && !allItemsAssigned ? (
-                                    'Agrega subcuentas o paga en "Resto"'
-                                ) : allItemsAssigned ? (
-                                    'Todos los productos asignados. Puedes cerrar la cuenta.'
-                                ) : (
-                                    'Asigna productos hasta en 4 subcuentas'
-                                )}
+
+                        {/* I2: Tot */}
+                        <div className="w-[9.28%] bg-amber-50 p-2 flex flex-col items-center">
+                            <h4 className="text-base font-semibold text-gray-700 mb-5">Tot</h4>
+                            <div className="flex-1 w-full flex flex-col items-center space-y-[0.55rem]">
+                                {order.map(item => {
+                                    const assignedTotal = totalAssignedOverall(item.id);
+                                    const quantityColor = assignedTotal === item.quantity ? 'text-green-500' : 'text-red-500';
+                                    return (
+                                        <div key={item.id} className="text-gray-700 text-sm flex items-center justify-center">
+                                            <span><span className={quantityColor}>{assignedTotal}</span></span>
+                                        </div>
+                                    );
+                                })}
+                                <div className="border-t border-gray-200 pt-2 mt-2 text-center">
+                                    <div className="font-bold text-base">
+                                        <span>
+                                            {order.reduce((sum, item) => sum + totalAssignedOverall(item.id), 0)}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
-                            {/* $ Subc button - retains its original width */}
-                            <div className="w-[48.36%] bg-white p-1 flex items-center justify-center">
-                                <button
-                                    onClick={handlePaySubaccount}
-                                    disabled={
-                                        calculateAssignedItemsForTab(selectedTab) === 0 ||
-                                        paidSubaccounts[selectedTab]
-                                    }
-                                    className={`px-4 py-1 rounded font-bold ${
-                                        calculateAssignedItemsForTab(selectedTab) === 0 || paidSubaccounts[selectedTab]
-                                            ? 'bg-gray-400 cursor-not-allowed'
-                                            : 'bg-green-500 text-white hover:bg-green-600'
-                                    }`}
-                                >
-                                    $ Subc
-                                </button>
+                        </div>
+
+                        {/* I3: Subcuentas */}
+                        <div className="w-[48.36%] bg-emerald-50 p-2 flex flex-col">
+
+                            <div className="flex-1">
+                                <div className="flex mb-2 items-center justify-around">
+                                    {tabs.map(tab => (
+                                        <button
+                                            key={tab}
+                                            onClick={() => setSelectedTab(tab)}
+                                            className={`px-3 py-0.5 rounded font-bold ${selectedTab === tab ? 'bg-orange-500 text-white' : 'bg-orange-100 text-orange-900 hover:bg-orange-200'}`}
+                                        >
+                                            {tab}
+                                        </button>
+                                    ))}
+                                    {tabs.filter(t => t !== 'Res').length < 3 && (
+                                        <button
+                                            onClick={handleAddTab}
+                                            className="px-3 py-0.5 rounded bg-green-400 text-white hover:bg-green-500"
+                                        >
+                                            +
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="space-y-0.5 mt-4 px-0">
+                                    {order.map(item => {
+                                        const menuItem = menuItems.find(m => m.id === item.id)!;
+                                        const quantity = selectedTab === 'Res'
+                                            ? restoQuantity(item.id)
+                                            : assignedQuantitiesByTab[selectedTab]?.[item.id] || 0;
+                                        const subtotal = quantity * menuItem.price;
+
+                                        return (
+                                            <div key={item.id} className="flex items-center text-sm py-0">
+                                                {paidSubaccounts[selectedTab] ? (
+                                                    <span className="w-1/2 text-center py-0.5">{quantity}</span>
+                                                ) : selectedTab === 'Res' ? (
+                                                    <span className="w-1/2 text-center py-0.5">{quantity}</span>
+                                                ) : (
+                                                    <input
+                                                        type="number"
+                                                        className="w-1/2 border border-gray-00 px-1 py-0.5 rounded text-sm"
+                                                        value={quantity}
+                                                        min={0}
+                                                        max={item.quantity}
+                                                        onChange={(e) =>
+                                                            handleQuantityChange(item.id, parseInt(e.target.value) || 0)
+                                                        }
+                                                    />
+                                                )}
+                                                <span className="w-1/2 text-right">{formatCurrency(subtotal, selectedCurrency)}</span>
+                                            </div>
+                                        );
+                                    })}
+                                    <div className="border-t border-gray-300 pt-2 mt-4 flex justify-between font-bold text-base">
+                                        <span>{calculateAssignedItemsForTab(selectedTab)}</span>
+                                        <span>{formatCurrency(calculateSubTotalForTab(selectedTab), selectedCurrency)}</span>
+                                    </div>
+                                </div>
+
+                                <PaymentCalculator 
+                                    total={calculateSubTotalForTab(selectedTab)} 
+                                    tableId={tableId}
+                                    showIcons={true}
+                                    localPayment={localSubaccountPayment}
+                                    onLocalPaymentChange={setLocalSubaccountPayment}
+                                    isSubaccount={true}
+                                />
                             </div>
                         </div>
                     </div>
                     
-                    <div className="w-full h-[10%] bg-white flex items-center justify-center">
-                        <button
-                            onClick={hasPaidSubaccounts && !allItemsAssigned ? () => {} : onClose}
-                            disabled={hasPaidSubaccounts && !allItemsAssigned}
-                            className={`px-4 py-2 rounded font-bold ${!hasPaidSubaccounts ? 'bg-orange-500 text-white hover:bg-orange-600 transition-colors' : allItemsAssigned ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-gray-400 cursor-not-allowed'}`}
-                        >
-                            {hasPaidSubaccounts && !allItemsAssigned ? 'Concluir Asignación' : allItemsAssigned ? 'Cerrar Cuenta' : 'Cerrar'}
-                        </button>
+                    <div className="h-[10%] flex">
+                        {/* Combined Notes Area */}
+                        <div className="w-[51.64%] bg-white p-2 flex items-center justify-center text-sm text-gray-700 text-center">
+                            {hasPaidSubaccounts && !allItemsAssigned ? (
+                                'Agrega subcuentas o paga en "Resto"'
+                            ) : allItemsAssigned ? (
+                                'Todos los productos asignados. Puedes cerrar la cuenta.'
+                            ) : (
+                                'Asigna productos hasta en 4 subcuentas'
+                            )}
+                        </div>
+                        {/* $ Subc button - retains its original width */}
+                        <div className="w-[48.36%] bg-white p-1 flex items-center justify-center">
+                            <button
+                                onClick={handlePaySubaccount}
+                                disabled={
+                                    calculateAssignedItemsForTab(selectedTab) === 0 ||
+                                    paidSubaccounts[selectedTab]
+                                }
+                                className={`px-4 py-1 rounded font-bold ${
+                                    calculateAssignedItemsForTab(selectedTab) === 0 || paidSubaccounts[selectedTab]
+                                        ? 'bg-gray-400 cursor-not-allowed'
+                                        : 'bg-green-500 text-white hover:bg-green-600'
+                                }`}
+                            >
+                                $ Subc
+                            </button>
+                        </div>
                     </div>
+                </div>
+                
+                <div className="w-full h-[10%] bg-white flex items-center justify-center">
+                    <button
+                        onClick={hasPaidSubaccounts && !allItemsAssigned ? () => {} : onClose}
+                        disabled={hasPaidSubaccounts && !allItemsAssigned}
+                        className={`px-4 py-2 rounded font-bold ${!hasPaidSubaccounts ? 'bg-orange-500 text-white hover:bg-orange-600 transition-colors' : allItemsAssigned ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-gray-400 cursor-not-allowed'}`}
+                    >
+                        {hasPaidSubaccounts && !allItemsAssigned ? 'Concluir Asignación' : allItemsAssigned ? 'Cerrar Cuenta' : 'Cerrar'}
+                    </button>
                 </div>
             </div>
         </div>
