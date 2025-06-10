@@ -34,11 +34,11 @@ export function PaymentCalculator({ total, tableId, showIcons, localPayment, onL
   const [isMixtoTransferQRModalOpen, setIsMixtoTransferQRModalOpen] = useState(false);
 
   // Estados para los montos del pago mixto
-  const [cashAmountMixto, setCashAmountMixto] = useState<number>(0);
-  const [transferAmountMixto, setTransferAmountMixto] = useState<number>(0);
+  const [cashAmountMixto, setCashAmountMixto] = useState<string>('');
+  const [transferAmountMixto, setTransferAmountMixto] = useState<string>('');
 
   // Calcular total pagado en el modo mixto
-  const totalPaidMixto = cashAmountMixto + transferAmountMixto;
+  const totalPaidMixto = parseFloat(cashAmountMixto || '0') + parseFloat(transferAmountMixto || '0');
 
   // Calcular restante en el modo mixto
   const remainingMixto = total - totalPaidMixto;
@@ -184,11 +184,10 @@ export function PaymentCalculator({ total, tableId, showIcons, localPayment, onL
                              inputMode="decimal"
                              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none pr-10"
                              placeholder="0.00"
-                             value={transferAmountMixto > 0 ? formatCurrency(transferAmountMixto) : ''}
+                             value={transferAmountMixto}
                              onChange={(e) => {
                                  const rawValue = e.target.value.replace(/[^0-9.]/g, '');
-                                 const numValue = parseFloat(rawValue) || 0;
-                                 setTransferAmountMixto(numValue);
+                                 setTransferAmountMixto(rawValue);
                              }}
                          />
                          {/* Botón QR absoluto */}
@@ -212,18 +211,17 @@ export function PaymentCalculator({ total, tableId, showIcons, localPayment, onL
                          inputMode="decimal"
                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                          placeholder="0.00"
-                         value={cashAmountMixto > 0 ? formatCurrency(cashAmountMixto) : ''}
+                         value={cashAmountMixto}
                          onChange={(e) => {
                              const rawValue = e.target.value.replace(/[^0-9.]/g, '');
-                             const numValue = parseFloat(rawValue) || 0;
-                             setCashAmountMixto(numValue);
+                             setCashAmountMixto(rawValue);
                          }}
                      />
                 </div>
 
                 {/* Mostrar cambio para el pago en efectivo si aplica */}
-                {cashAmountMixto > 0 && (total - transferAmountMixto > 0) && (
-                    <ChangeDisplay payment={cashAmountMixto} total={total - transferAmountMixto} isSubaccount={true} />
+                {parseFloat(cashAmountMixto || '0') > 0 && (total - parseFloat(transferAmountMixto || '0') > 0) && (
+                    <ChangeDisplay payment={parseFloat(cashAmountMixto || '0')} total={total - parseFloat(transferAmountMixto || '0')} isSubaccount={true} />
                 )}
 
                  {/* Aquí se mostraría el total pagado y el restante */}
@@ -239,7 +237,7 @@ export function PaymentCalculator({ total, tableId, showIcons, localPayment, onL
                 <button
                     onClick={() => {
                         if (totalPaidMixto >= total) {
-                            updatePayment(tableId, { amount: totalPaidMixto, method: 'mixed', cashPart: cashAmountMixto, transferPart: transferAmountMixto });
+                            updatePayment(tableId, { amount: totalPaidMixto, method: 'mixed', cashPart: parseFloat(cashAmountMixto || '0'), transferPart: parseFloat(transferAmountMixto || '0') });
                             setIsMixtoModalOpen(false);
                         } else {
                             alert('El monto pagado es insuficiente.');
