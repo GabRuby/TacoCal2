@@ -9,8 +9,8 @@ interface PesosInputProps {
 }
 
 export function PesosInput({ item, value, onChange }: PesosInputProps) {
-  const [amountInPesos, setAmountInPesos] = useState<string>('0.00');
-  const [amountInUnits, setAmountInUnits] = useState<string>('0.00');
+  const [amountInPesos, setAmountInPesos] = useState<string>('');
+  const [amountInUnits, setAmountInUnits] = useState<string>('');
   const [activeInput, setActiveInput] = useState<'pesos' | 'units' | null>(null);
 
   const pricePerUnit = item.price;
@@ -18,10 +18,15 @@ export function PesosInput({ item, value, onChange }: PesosInputProps) {
 
   useEffect(() => {
     if (activeInput === null) {
-      const units = value;
-      const pesos = value * pricePerUnit;
-      setAmountInUnits(units.toFixed(3));
-      setAmountInPesos(pesos.toFixed(2));
+      if (value === 0) {
+        setAmountInUnits('');
+        setAmountInPesos('');
+      } else {
+        const units = value;
+        const pesos = value * pricePerUnit;
+        setAmountInUnits(units.toFixed(3));
+        setAmountInPesos(pesos.toFixed(2));
+      }
     }
   }, [value, pricePerUnit, activeInput]);
 
@@ -53,8 +58,8 @@ export function PesosInput({ item, value, onChange }: PesosInputProps) {
     const units = Math.max(0, parseFloat(amountInUnits) || 0);
     const pesos = Math.max(0, parseFloat(amountInPesos) || 0);
 
-    setAmountInUnits(units.toFixed(3));
-    setAmountInPesos(pesos.toFixed(2));
+    setAmountInUnits(units === 0 ? '' : units.toFixed(3));
+    setAmountInPesos(pesos === 0 ? '' : pesos.toFixed(2));
     setActiveInput(null);
   };
 
@@ -70,7 +75,7 @@ export function PesosInput({ item, value, onChange }: PesosInputProps) {
           type="number"
           inputMode="decimal"
           min="0"
-          value={activeInput === 'pesos' ? amountInPesos : formatCurrency(parseFloat(amountInPesos), 'MXN', 'es-MX').replace('$', '')}
+          value={activeInput === 'pesos' ? amountInPesos : (parseFloat(amountInPesos) === 0 ? '' : formatCurrency(parseFloat(amountInPesos), 'MXN', 'es-MX').replace('$', ''))}
           onChange={handlePesosChange}
           onFocus={() => setActiveInput('pesos')}
           onBlur={handleBlur}
@@ -87,7 +92,7 @@ export function PesosInput({ item, value, onChange }: PesosInputProps) {
       type="number"
           inputMode="decimal"
       min="0"
-          value={activeInput === 'units' ? amountInUnits : parseFloat(amountInUnits).toFixed(3)}
+          value={activeInput === 'units' ? amountInUnits : (parseFloat(amountInUnits) === 0 ? '' : parseFloat(amountInUnits).toFixed(3))}
           onChange={handleUnitsChange}
           onFocus={() => setActiveInput('units')}
           onBlur={handleBlur}
