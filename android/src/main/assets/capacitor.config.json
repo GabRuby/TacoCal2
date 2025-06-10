@@ -1,0 +1,22 @@
+{
+	"appId": "com.barbacoa.cervantes",
+	"appName": "Barbacoa Cervantes",
+	"webDir": "dist",
+	"server": {
+		"url": "http://192.168.100.6:3000"
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 2000,
+			"backgroundColor": "#EA580C",
+			"showSpinner": false,
+			"androidSpinnerStyle": "large",
+			"spinnerColor": "#ffffff",
+			"splashFullScreen": true,
+			"splashImmersive": true
+		}
+	},
+	"android": {
+		"allowMixedContent": true
+	}
+}

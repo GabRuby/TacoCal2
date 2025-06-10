@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Barbacoa Cervantes</string>
+    <string name="title_activity_main">Barbacoa Cervantes</string>
+    <string name="package_name">com.barbacoa.cervantes</string>
+    <string name="custom_url_scheme">com.barbacoa.cervantes</string>
+</resources>
