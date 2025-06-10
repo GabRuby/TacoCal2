@@ -16,11 +16,11 @@
     "android:live": "npm run dev -- --host --port 5173 & npx cap sync android && JAVA_HOME=/Users/Gabriel/Desktop/jdk-17.0.15+6/Contents/Home npx cap run android -l"
   },
   "dependencies": {
-    "@capacitor/android": "^7.2.0",
-    "@capacitor/cli": "^7.2.0",
-    "@capacitor/core": "^7.2.0",
-    "@capacitor/ios": "^7.2.0",
-    "@capacitor/splash-screen": "^7.2.0",
+    "@capacitor/android": "^5.7.8",
+    "@capacitor/cli": "^5.7.8",
+    "@capacitor/core": "^5.7.8",
+    "@capacitor/ios": "^5.7.8",
+    "@capacitor/splash-screen": "^5.0.8",
     "@sendgrid/mail": "^8.1.5",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^5.0.2",
