@@ -14,12 +14,12 @@ interface PaymentCalculatorProps {
   tableId: string;
   showIcons?: boolean;
   // Nuevas props para el pago local en subcuentas
-  localPayment?: { amount: number; method: Table['payment']['method'] };
-  onLocalPaymentChange?: (payment: { amount: number; method: Table['payment']['method'] }) => void;
+  localPayment?: { amount: number; method: 'cash' | 'transfer' | 'card' | 'mixed' | 'NoEsp' };
+  onLocalPaymentChange?: (payment: { amount: number; method: 'cash' | 'transfer' | 'card' | 'mixed' | 'NoEsp' }) => void;
   isSubaccount?: boolean; // Nueva prop para indicar si es en subcuentas
 }
 
-export function PaymentCalculator({ total, tableId, showIcons = false, localPayment, onLocalPaymentChange, isSubaccount = false }: PaymentCalculatorProps) {
+export function PaymentCalculator({ total, tableId, showIcons, localPayment, onLocalPaymentChange, isSubaccount = false }: PaymentCalculatorProps) {
   // Usar el pago local si está disponible (para subcuentas), de lo contrario usar el del contexto
   const { tables, updatePayment, closeTable } = useTables();
   const { config } = useConfig();
@@ -61,7 +61,7 @@ export function PaymentCalculator({ total, tableId, showIcons = false, localPaym
   // Si showIcons no se proporciona (es undefined), usa la lógica responsiva (isSmallScreen).
   const shouldShowOnlyIcons = showIcons !== undefined ? showIcons : isSmallScreen;
 
-  const handlePaymentMethodChange = (method: Table['payment']['method']) => {
+  const handlePaymentMethodChange = (method: 'cash' | 'transfer' | 'card' | 'mixed' | 'NoEsp') => {
     if (onLocalPaymentChange) {
       onLocalPaymentChange({ ...payment, method });
     } else {
@@ -126,10 +126,13 @@ export function PaymentCalculator({ total, tableId, showIcons = false, localPaym
             className={`flex-1 flex items-center justify-center gap-2 ${buttonPadding} rounded-md border bg-purple-100 border-purple-500 text-purple-700 hover:bg-purple-50`}
           >
              {shouldShowOnlyIcons ? (
-                <Banknote size={iconSize} />
+                <>
+                    <Banknote size={iconSize} />
+                    <CreditCard size={iconSize / 1.2} />
+                </>
              ) : (
                 <>
-                    <Banknote size={iconSize} /> {/* Usamos un icono similar por ahora */}
+                    <Banknote size={iconSize} />
                     <span>Mixto</span>
                 </>
              )}
