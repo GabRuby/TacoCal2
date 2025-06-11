@@ -125,7 +125,7 @@ export function OrderSummary({
           
           return (
             <div key={item.id} className={`flex justify-between text-gray-700 ${FONT_SIZES[currentFontSizeIndex]}`}>
-              <span>{menuItem.name} x {item.quantity.toFixed(2)}</span>
+              <span>{menuItem.name} x {Number.isInteger(item.quantity) ? item.quantity : item.quantity.toFixed(2)}</span>
               <span>{formatCurrency(subtotal)}</span>
             </div>
           );

@@ -24,12 +24,13 @@ export function MenuItems({ order, onUpdateQuantity }: MenuItemsProps) {
     if (item.id === 'carne-pesos') {
       return (
         <input
-          type="number"
+          type="text"
           min="0"
           step="1"
           value={getQuantity(item.id)}
           onChange={(e) => handleInputChange(item.id, e.target.value)}
-          className="w-20 text-center font-medium bg-white border border-orange-200 rounded-md py-1 px-2 focus:outline-none focus:ring-2 focus:ring-orange-300"
+          onWheel={(e) => e.preventDefault()}
+          className="w-20 text-center font-medium bg-white border border-orange-200 rounded-md py-1 px-2 focus:outline-none focus:ring-2 focus:ring-orange-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           placeholder="$0"
         />
       );
@@ -46,11 +47,12 @@ export function MenuItems({ order, onUpdateQuantity }: MenuItemsProps) {
         </button>
         
         <input
-          type="number"
+          type="text"
           min="0"
           value={getQuantity(item.id)}
           onChange={(e) => handleInputChange(item.id, e.target.value)}
-          className="w-14 text-center font-medium bg-white border border-orange-200 rounded-md py-1 px-2 focus:outline-none focus:ring-2 focus:ring-orange-300"
+          onWheel={(e) => e.preventDefault()}
+          className="w-14 text-center font-medium bg-white border border-orange-200 rounded-md py-1 px-2 focus:outline-none focus:ring-2 focus:ring-orange-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         />
         
         <button

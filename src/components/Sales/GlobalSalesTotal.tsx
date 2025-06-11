@@ -3,6 +3,7 @@ import { DollarSign, ChevronUp, Eye, EyeOff, Download, Upload } from 'lucide-rea
 import { getDailySalesReport, importDailySales, exportDailySales } from '../../utils/dailySales';
 import { DailySalesActions } from './DailySalesActions';
 import { useConfig } from '../../contexts/ConfigContext';
+import { useDailySales } from '../../contexts/DailySalesContext';
 
 type NipView = 'auth' | 'recovery' | 'recoveryNewPin';
 
@@ -26,11 +27,12 @@ export function GlobalSalesTotal() {
   const [showAmount, setShowAmount] = useState(storedShowAmount ? JSON.parse(storedShowAmount) : true);
 
   const [, forceUpdate] = useState({});
-  const { total, products } = getDailySalesReport();
+  const { dailySales, refreshDailySales } = useDailySales();
+  const { total, products } = dailySales;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleReset = () => {
-    forceUpdate({});
+    refreshDailySales();
   };
 
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -42,7 +44,7 @@ export function GlobalSalesTotal() {
       try {
         const content = e.target?.result as string;
         importDailySales(content);
-        forceUpdate({});
+        refreshDailySales();
       } catch (error) {
         alert('Error al importar las ventas. Verifica que el archivo sea válido.');
       }
