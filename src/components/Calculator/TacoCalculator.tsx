@@ -13,6 +13,7 @@ import { ImagePreviewModal } from '../Settings/ImagePreview/ImagePreviewModal';
 import { hasValidOrder } from '../../utils/order';
 import { addSaleToDaily } from '../../utils/dailySales';
 import { menuItems } from '../../data/menuItems';
+import { useDailySales } from '../../contexts/DailySalesContext';
 
 export function TacoCalculator() {
   const [showSettings, setShowSettings] = useState(false);
@@ -23,6 +24,7 @@ export function TacoCalculator() {
   const [config, setConfig] = useState(getConfig());
   const calculateTotal = useCalculateTotal();
   const { tables, activeTableId, closeTable, updateOrder, updateTableInfo } = useTables();
+  const { refreshDailySales } = useDailySales();
 
   const activeTable = tables.find(t => t.id === activeTableId);
   const currentOrder = activeTable?.currentOrder || [];
@@ -60,6 +62,7 @@ export function TacoCalculator() {
 
     addSaleToDaily(sale, activeTable.id, tableNameAtSale);
     closeTable(activeTableId);
+    refreshDailySales();
   };
 
   const handleClearOrder = () => {
