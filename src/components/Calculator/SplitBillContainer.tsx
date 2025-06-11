@@ -4,6 +4,9 @@ import { TacoOrder } from '../../types';
 import { menuItems } from '../../data/menuItems';
 import { formatCurrency } from '../../utils/currencyFormatter';
 import { PaymentCalculator } from '../Calculator/PaymentCalculator/PaymentCalculator'; // Asumiendo que PaymentCalculator es un componente hermano o en esta ruta
+import { useTables } from '../../contexts/TablesContext';
+import { addSaleToDaily } from '../../utils/dailySales';
+import { useDailySales } from '../../contexts/DailySalesContext';
 
 // Definición de tipos más flexible para TabKey
 type TabKey = string;
@@ -28,6 +31,8 @@ const SplitBillContainer = ({ order, total, tableId, onClose }: SplitBillContain
     const [assignedQuantitiesByTab, setAssignedQuantitiesByTab] = useState<AssignedQuantitiesByTab>({});
     const [paidSubaccounts, setPaidSubaccounts] = useState<{ [key: string]: boolean }>({});
     const [localSubaccountPayment, setLocalSubaccountPayment] = useState<{ amount: number; method: 'cash' | 'transfer' | 'card' | 'mixed' | 'NoEsp' }>({ amount: 0, method: 'cash' });
+    const { tables, closeTable } = useTables();
+    const { refreshDailySales } = useDailySales();
 
     useEffect(() => {
         setAssignedQuantitiesByTab(prev => {
@@ -394,7 +399,13 @@ const SplitBillContainer = ({ order, total, tableId, onClose }: SplitBillContain
                         
                         <div className="h-[10%] flex">
                             {/* Combined Notes Area */}
-                            <div className="w-[51.64%] bg-white p-2 flex items-center justify-center text-sm text-gray-700 text-center">
+                            <div className={`w-[51.64%] bg-white p-2 flex items-center justify-center text-sm text-center ${
+                                hasPaidSubaccounts && !allItemsAssigned
+                                    ? 'text-red-500'
+                                    : allItemsAssigned
+                                        ? 'text-green-500'
+                                        : 'text-gray-700'
+                            }`}>
                                 {hasPaidSubaccounts && !allItemsAssigned ? (
                                     'Agrega subcuentas o paga en "Resto"'
                                 ) : allItemsAssigned ? (
@@ -425,7 +436,30 @@ const SplitBillContainer = ({ order, total, tableId, onClose }: SplitBillContain
                     
                     <div className="w-full h-[10%] bg-white flex items-center justify-center">
                         <button
-                            onClick={hasPaidSubaccounts && !allItemsAssigned ? () => {} : onClose}
+                            onClick={async () => {
+                                if (allItemsAssigned) {
+                                    const sale = {
+                                        items: order,
+                                        total: total,
+                                        timestamp: new Date().toISOString(),
+                                        tableNumber: parseFloat(tableId),
+                                        paymentMethod: localSubaccountPayment.method || 'NoEsp',
+                                        cashPart: localSubaccountPayment.method === 'cash' ? localSubaccountPayment.amount : undefined,
+                                        transferPart: localSubaccountPayment.method === 'transfer' ? localSubaccountPayment.amount : undefined,
+                                        cardPart: localSubaccountPayment.method === 'card' ? localSubaccountPayment.amount : undefined,
+                                    };
+
+                                    const currentTable = tables.find(t => t.id === tableId);
+                                    const tableNameAtSale = currentTable?.name ?? `Mesa ${currentTable?.number}`;
+
+                                    addSaleToDaily(sale, tableId, tableNameAtSale);
+
+                                    closeTable(tableId);
+                                    refreshDailySales();
+                                } else {
+                                    onClose();
+                                }
+                            }}
                             disabled={hasPaidSubaccounts && !allItemsAssigned}
                             className={`px-4 py-2 rounded font-bold ${!hasPaidSubaccounts ? 'bg-orange-500 text-white hover:bg-orange-600 transition-colors' : allItemsAssigned ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-gray-400 cursor-not-allowed'}`}
                         >
