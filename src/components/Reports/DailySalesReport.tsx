@@ -2,6 +2,7 @@
 import React from 'react';
 import { getDailySalesReport } from '../../utils/dailySales';
 import { formatTime, formatDate } from '../../utils/date';
+import { formatQuantity } from '../../utils/numberFormat';
 import { useMenu } from '../../contexts/MenuContext';
 
 const getShortPaymentMethod = (method: string | undefined): string => {
@@ -100,7 +101,7 @@ export function DailySalesReport() {
                 return (
                   <div key={item.id} className="flex justify-between text-sm">
                     <span className="text-gray-600">
-                      {menuItem?.name} x {item.quantity}
+                      {menuItem?.name} x {formatQuantity(item.quantity)}
                     </span>
                     <span className="text-gray-700">
                       ${((menuItem?.price || 0) * item.quantity).toFixed(2)}
