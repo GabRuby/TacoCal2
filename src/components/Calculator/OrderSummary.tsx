@@ -120,12 +120,12 @@ export function OrderSummary({
       
       <div className="space-y-2">
         {order.map((item) => {
-          const menuItem = menuItems.find((m) => m.id === item.id)!;
-          const subtotal = menuItem.price * item.quantity;
+          const menuItem = menuItems.find((m) => m.id === item.id);
+          const subtotal = menuItem ? menuItem.price * item.quantity : 0;
           
           return (
             <div key={item.id} className={`flex justify-between text-gray-700 ${FONT_SIZES[currentFontSizeIndex]}`}>
-              <span>{menuItem.name} x {Number.isInteger(item.quantity) ? item.quantity : item.quantity.toFixed(2)}</span>
+              <span>{menuItem?.name} x {Number.isInteger(item.quantity) ? item.quantity : item.quantity.toFixed(2)}</span>
               <span>{formatCurrency(subtotal)}</span>
             </div>
           );
