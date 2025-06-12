@@ -368,7 +368,7 @@ export function GlobalSalesTotal() {
               )}
             </button>
             <span className="text-2xl font-bold text-orange-600">
-              {showAmount ? `$${total.toFixed(2)}` : '****'}
+              {showAmount ? `$${total.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '****'}
             </span>
           </div>
         </div>
