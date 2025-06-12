@@ -4,6 +4,7 @@ import { getDailySalesReport, importDailySales, exportDailySales } from '../../u
 import { DailySalesActions } from './DailySalesActions';
 import { useConfig } from '../../contexts/ConfigContext';
 import { useDailySales } from '../../contexts/DailySalesContext';
+import { formatQuantity } from '../../utils/numberFormat';
 
 type NipView = 'auth' | 'recovery' | 'recoveryNewPin';
 
@@ -332,7 +333,7 @@ export function GlobalSalesTotal() {
                 <div key={product.id} className="flex justify-between text-sm">
                   <div className="flex gap-2">
                     <span className="text-gray-700">{product.name}</span>
-                    <span className="text-gray-500">x {product.quantity}</span>
+                    <span className="text-gray-500">x {formatQuantity(product.quantity)}</span>
                   </div>
                   <span className="font-medium">${product.total.toFixed(2)}</span>
                 </div>
